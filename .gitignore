@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.next/
+build/
+contracts/octapoint_move/build/
+.env
+.env.local
+*.log
+.DS_Store

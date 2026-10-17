@@ -1,0 +1,18 @@
+{
+  "name": "octapoint-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OctaPoint: A Blockchain-Backed Credit-as-a-Service Platform with Developer SDKs and AI-Ready MCP Integration",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:gateway": "npm --workspace=apps/api-gateway run dev",
+    "dev:portals": "npm --workspace=apps/web-portals run dev",
+    "build": "npm run build --workspaces --if-present",
+    "test": "vitest run",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
+  }
+}
