@@ -1,0 +1,240 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 1. Bảng Người dùng hệ thống (Admin, Merchant Staff, End-User có tài khoản)
+model User {
+  id            String    @id @default(uuid()) @db.VarChar(255)
+  email         String    @unique @db.VarChar(255)
+  passwordHash  String?   @db.VarChar(255)
+  fullName      String    @db.VarChar(255)
+  role          String    @db.VarChar(50) // SUPER_ADMIN, MERCHANT_ADMIN, END_USER
+  googleSub     String?   @unique @db.VarChar(255) // Phục vụ zkLogin / Google OAuth
+  suiAddress    String?   @unique @db.VarChar(255) // Địa chỉ ví Sui ánh xạ tự động
+  status        String    @default("ACTIVE") @db.VarChar(50) // ACTIVE, BANNED
+  tenantId      String?   @db.VarChar(255)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  isDeleted     Boolean   @default(false)
+
+  tenant        MerchantTenant? @relation(fields: [tenantId], references: [id])
+  notifications Notification[]
+}
+
+// 2. Bảng Đối tác Doanh nghiệp (Merchant Tenant)
+model MerchantTenant {
+  id                 String    @id @default(uuid()) @db.VarChar(255)
+  tenantCode         String    @unique @db.VarChar(100)
+  businessName       String    @db.VarChar(255)
+  industry           String    @db.VarChar(100) // F&B, Supermarket, Arcade, Mall
+  pointSymbol        String    @db.VarChar(20)  // Ví dụ: OCTA, HLP, CGVP
+  suiPolicyObjectId  String?   @db.VarChar(255) // Object ID chính sách trên Sui Testnet
+  status             String    @default("PENDING") @db.VarChar(50) // PENDING, ACTIVE, SUSPENDED
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  isDeleted          Boolean   @default(false)
+
+  users              User[]
+  apiKeys            ApiKey[]
+  loyaltyRules       LoyaltyRule[]
+  tierConfigs        TierConfig[]
+  campaigns          Campaign[]
+  customerWallets    CustomerWallet[]
+  transactions       CreditTransaction[]
+  gasTreasury        GasTreasury?
+  subscription       Subscription?
+  mcpConfig          McpConfig?
+  fraudAlerts        FraudAlert[]
+}
+
+// 3. Bảng Quản lý API Key & HMAC Secret cho SDK
+model ApiKey {
+  id            String    @id @default(uuid()) @db.VarChar(255)
+  tenantId      String    @db.VarChar(255)
+  keyName       String    @db.VarChar(255)
+  publicKey     String    @unique @db.VarChar(255)
+  hmacSecret    String    @db.VarChar(255) // Mã hóa AES-256
+  environment   String    @default("TESTNET") @db.VarChar(50) // TESTNET, PRODUCTION
+  rateLimitRpm  Int       @default(600)
+  status        String    @default("ACTIVE") @db.VarChar(50) // ACTIVE, REVOKED
+  lastUsedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  isDeleted     Boolean   @default(false)
+
+  tenant        MerchantTenant @relation(fields: [tenantId], references: [id])
+}
+
+// 4. Bảng Cấu hình Quy tắc Tích & Đổi điểm (Dynamic Rule Engine)
+model LoyaltyRule {
+  id                String    @id @default(uuid()) @db.VarChar(255)
+  tenantId          String    @db.VarChar(255)
+  ruleName          String    @db.VarChar(255)
+  earnUnitAmount    Float     @default(10000) // Ví dụ: Mỗi 10,000 VNĐ
+  baseEarnPoints    Int       @default(1)     // Tích được 1 điểm
+  redeemPointValue  Float     @default(1000)  // 1 điểm đổi được 1,000 VNĐ
+  minRedeemPoints   Int       @default(50)    // Tối thiểu 50 điểm mới được đổi
+  maxRedeemPerOrder Int       @default(5000)  // Tối đa đổi 5000 điểm/đơn
+  expirationDays    Int       @default(365)   // Điểm hết hạn sau 365 ngày
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  tenant            MerchantTenant @relation(fields: [tenantId], references: [id])
+}
+
+// 5. Bảng Cấu hình Hạng thành viên (Tier Thresholds)
+model TierConfig {
+  id              String    @id @default(uuid()) @db.VarChar(255)
+  tenantId        String    @db.VarChar(255)
+  tierName        String    @db.VarChar(100) // BRONZE, SILVER, GOLD, DIAMOND
+  minLifetimePts  Int       @default(0)       // Điểm tích lũy cần đạt
+  earnMultiplier  Float     @default(1.0)     // Hệ số nhân điểm (1.0, 1.2, 1.5, 2.0)
+  createdAt       DateTime  @default(now())
+
+  tenant          MerchantTenant @relation(fields: [tenantId], references: [id])
+}
+
+// 6. Bảng Chiến dịch Khuyến mãi Nhân điểm (Multiplier Campaigns)
+model Campaign {
+  id              String    @id @default(uuid()) @db.VarChar(255)
+  tenantId        String    @db.VarChar(255)
+  campaignName    String    @db.VarChar(255)
+  multiplier      Float     @default(2.0)
+  startDate       DateTime
+  endDate         DateTime
+  status          String    @default("ACTIVE") @db.VarChar(50) // ACTIVE, EXPIRED, PAUSED
+  createdAt       DateTime  @default(now())
+
+  tenant          MerchantTenant @relation(fields: [tenantId], references: [id])
+}
+
+// 7. Bảng Ví Điểm thưởng của Khách hàng theo từng Merchant (Ánh xạ Sui Object)
+model CustomerWallet {
+  id                String    @id @default(uuid()) @db.VarChar(255)
+  tenantId          String    @db.VarChar(255)
+  externalUserId    String    @db.VarChar(255) // Mã khách hàng từ hệ thống POS/Web của Merchant
+  customerEmail     String?   @db.VarChar(255)
+  suiWalletAddress  String    @db.VarChar(255)
+  suiCreditObjectId String?   @unique @db.VarChar(255) // ID của Credit Object trên Sui Testnet
+  availableBalance  Int       @default(0)
+  lockedDebtBalance Int       @default(0)
+  lifetimePoints    Int       @default(0)
+  currentTier       String    @default("BRONZE") @db.VarChar(50)
+  status            String    @default("ACTIVE") @db.VarChar(50) // ACTIVE, FROZEN
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  tenant            MerchantTenant @relation(fields: [tenantId], references: [id])
+  transactions      CreditTransaction[]
+
+  @@unique([tenantId, externalUserId])
+}
+
+// 8. Bảng Giao dịch Điểm thưởng & Bằng chứng On-chain
+model CreditTransaction {
+  id              String    @id @default(uuid()) @db.VarChar(255)
+  tenantId        String    @db.VarChar(255)
+  walletId        String    @db.VarChar(255)
+  idempotencyKey  String    @unique @db.VarChar(255) // Chống trùng lặp giao dịch (BR-03)
+  txType          String    @db.VarChar(50) // ISSUE, REDEEM, MCP_BONUS, EXPIRE, CLAWBACK
+  pointsAmount    Int
+  orderAmount     Float?    // Giá trị hóa đơn gốc (nếu có)
+  sourceChannel   String    @default("SDK_API") @db.VarChar(50) // SDK_API, POS, MCP_AGENT, PORTAL
+  suiTxDigest     String?   @db.VarChar(255) // Mã Transaction Hash trên Sui Testnet
+  gasUsedMist     Int?      @default(0)
+  status          String    @default("COMPLETED") @db.VarChar(50) // PENDING, COMPLETED, FAILED, QUEUED_FOR_GAS
+  note            String?   @db.VarChar(255)
+  createdAt       DateTime  @default(now())
+
+  tenant          MerchantTenant @relation(fields: [tenantId], references: [id])
+  wallet          CustomerWallet @relation(fields: [walletId], references: [id])
+  auditLog        AuditLog?
+}
+
+// 9. Bảng Lưu trữ Bằng chứng Kiểm toán (Walrus Audit Trail)
+model AuditLog {
+  id               String    @id @default(uuid()) @db.VarChar(255)
+  transactionId    String    @unique @db.VarChar(255)
+  payloadHash      String    @db.VarChar(255) // SHA-256 hash của dữ liệu đối soát
+  walrusBlobId     String    @db.VarChar(255) // Blob ID lưu trữ bất biến trên Walrus
+  encryptedData    String    @db.Text         // Bản ghi mã hóa AES-256 (Seal Encryption)
+  verifiedAt       DateTime  @default(now())
+
+  transaction      CreditTransaction @relation(fields: [transactionId], references: [id])
+}
+
+// 10. Bảng Quỹ Tài trợ Phí Gas (Enoki Sponsored Transactions Treasury)
+model GasTreasury {
+  id                  String    @id @default(uuid()) @db.VarChar(255)
+  tenantId            String    @unique @db.VarChar(255)
+  sponsorPoolAddress  String    @db.VarChar(255)
+  suiBalance          Float     @default(10.0) // Số dư SUI tài trợ hiện tại
+  maxGasPerTxMist     Int       @default(5000000)
+  totalSponsoredTxs   Int       @default(0)
+  status              String    @default("HEALTHY") @db.VarChar(50) // HEALTHY, LOW_BALANCE, DEPLETED
+  updatedAt           DateTime  @updatedAt
+
+  tenant              MerchantTenant @relation(fields: [tenantId], references: [id])
+}
+
+// 11. Bảng Quản lý Gói cước & Thanh toán (Stripe Billing)
+model Subscription {
+  id                 String    @id @default(uuid()) @db.VarChar(255)
+  tenantId           String    @unique @db.VarChar(255)
+  planName           String    @default("STARTER") @db.VarChar(100) // STARTER, GROWTH, ENTERPRISE
+  monthlyFeeUsd      Float     @default(49.0)
+  monthlyTxQuota     Int       @default(10000)
+  currentMonthTxUsed Int       @default(0)
+  stripeCustomerId   String?   @db.VarChar(255)
+  billingStatus      String    @default("ACTIVE") @db.VarChar(50) // ACTIVE, PAST_DUE, CANCELED
+  nextBillingDate    DateTime
+  updatedAt          DateTime  @updatedAt
+
+  tenant             MerchantTenant @relation(fields: [tenantId], references: [id])
+}
+
+// 12. Bảng Cấu hình AI Agent (OctaPoint MCP Server Config & Logs)
+model McpConfig {
+  id                 String    @id @default(uuid()) @db.VarChar(255)
+  tenantId           String    @unique @db.VarChar(255)
+  mcpClientToken     String    @unique @db.VarChar(255)
+  allowBalanceQuery  Boolean   @default(true)
+  allowHistoryQuery  Boolean   @default(true)
+  allowAutoBonus     Boolean   @default(true)
+  maxAiBonusPerTx    Int       @default(500) // Giới hạn điểm AI được tự tặng (BR-13)
+  updatedAt          DateTime  @updatedAt
+
+  tenant             MerchantTenant @relation(fields: [tenantId], references: [id])
+}
+
+// 13. Bảng Cảnh báo Gian lận & Chặn Spam (Anti-Fraud Engine)
+model FraudAlert {
+  id              String    @id @default(uuid()) @db.VarChar(255)
+  tenantId        String    @db.VarChar(255)
+  alertType       String    @db.VarChar(100) // INVALID_HMAC, RATE_LIMIT_EXCEEDED, ABNORMAL_MINTING
+  ipAddress       String    @db.VarChar(100)
+  severity        String    @default("HIGH") @db.VarChar(50) // LOW, MEDIUM, HIGH, CRITICAL
+  description     String    @db.VarChar(255)
+  isResolved      Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+
+  tenant          MerchantTenant @relation(fields: [tenantId], references: [id])
+}
+
+// 14. Bảng Thông báo Hệ thống (Notifications)
+model Notification {
+  id          String    @id @default(uuid()) @db.VarChar(255)
+  userId      String    @db.VarChar(255)
+  title       String    @db.VarChar(255)
+  content     String    @db.VarChar(255)
+  type        String    @db.VarChar(50) // SYSTEM, BILLING, FRAUD_ALERT, GAS_WARNING
+  isRead      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id])
+}
