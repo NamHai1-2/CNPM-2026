@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
+import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { loadEnv } from '../env.js';
 import { createSql, type Sql } from './client.js';
@@ -28,10 +29,10 @@ export async function migrate(sql: Sql, dir: string = MIGRATIONS_DIR): Promise<s
   await sql.begin(async (tx) => {
     await tx.unsafe(`SELECT pg_advisory_xact_lock(${LOCK_ID})`);
     const rows = await tx`SELECT filename, checksum FROM schema_migrations`;
-    const done = new Map<string, string>(rows.map((row) => [String(row.filename), String(row.checksum)]));
+    const done = new Map<string, string>(rows.map((row): [string, string] => [String(row.filename), String(row.checksum)]));
 
     for (const file of files) {
-      const content = await readFile(new URL(file, pathToFileURL(dir + '/')), 'utf8');
+      const content = await readFile(join(dir, file), 'utf8');
       const checksum = createHash('sha256').update(content).digest('hex');
       const previous = done.get(file);
       if (previous !== undefined) {
