@@ -1,0 +1,21 @@
+# Local development database only. Never use these credentials anywhere else.
+services:
+  db:
+    image: postgres:16
+    container_name: octapoint-db
+    environment:
+      POSTGRES_USER: octapoint
+      POSTGRES_PASSWORD: octapoint
+      POSTGRES_DB: octapoint
+    ports:
+      - '5432:5432'
+    volumes:
+      - octapoint-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U octapoint -d octapoint']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  octapoint-pgdata:
