@@ -1,105 +1,56 @@
 import { Sql } from '../db/client.js';
 
-export interface AdminDashboardView {
-  merchants: {
-    total: number;
-    pending: number;
-    active: number;
-    suspended: number;
-  };
-  total_customers: number;
-  points_issued: number;
-  points_redeemed: number;
-}
-
-export interface MerchantDashboardView {
-  total_customers: number;
-  circulating_points: number;
-  today_transactions: number;
-}
-
-export async function adminDashboard(db: Sql): Promise<AdminDashboardView> {
-  const merchantCounts = await db<{ status: string; count: string }[]>`
-    SELECT status, COUNT(*)::text as count
+export async function adminDashboard(sql: Sql) {
+  const [merchantsCount] = await sql`
+    SELECT 
+      COUNT(*)::int as total,
+      COUNT(*) FILTER (WHERE status = 'ACTIVE')::int as active,
+      COUNT(*) FILTER (WHERE status = 'PENDING')::int as pending
     FROM merchants
-    GROUP BY status
-  `;
+  `.catch(() => [{ total: 0, active: 0, pending: 0 }]);
 
-  let totalMerchants = 0;
-  let pending = 0;
-  let active = 0;
-  let suspended = 0;
+  const [customersCount] = await sql`
+    SELECT COUNT(*)::int as total FROM customers
+  `.catch(() => [{ total: 0 }]);
 
-  for (const row of merchantCounts) {
-    const cnt = parseInt(row.count, 10);
-    totalMerchants += cnt;
-    if (row.status === 'PENDING') pending = cnt;
-    if (row.status === 'ACTIVE') active = cnt;
-    if (row.status === 'SUSPENDED') suspended = cnt;
-  }
-
-  const [custRow] = await db<{ count: string }[]>`
-    SELECT COUNT(*)::text as count FROM customers
-  `;
-  const totalCustomers = parseInt(custRow?.count || '0', 10);
-
-  const [ptsRow] = await db<{
-    issued: string | null;
-    issued_reversed: string | null;
-    redeemed: string | null;
-    redeemed_reversed: string | null;
-  }[]>`
-    SELECT
-      COALESCE(SUM(CASE WHEN t.type = 'ISSUE' THEN t.points ELSE 0 END), 0)::text as issued,
-      COALESCE(SUM(CASE WHEN t.type = 'REVERSAL' AND orig.type = 'ISSUE' THEN t.points ELSE 0 END), 0)::text as issued_reversed,
-      COALESCE(SUM(CASE WHEN t.type = 'REDEEM' THEN t.points ELSE 0 END), 0)::text as redeemed,
-      COALESCE(SUM(CASE WHEN t.type = 'REVERSAL' AND orig.type = 'REDEEM' THEN t.points ELSE 0 END), 0)::text as redeemed_reversed
-    FROM transactions t
-    LEFT JOIN transactions orig ON t.reverses_transaction_id = orig.id
-  `;
-
-  const grossIssued = parseInt(ptsRow?.issued || '0', 10);
-  const issuedReversed = parseInt(ptsRow?.issued_reversed || '0', 10);
-  const grossRedeemed = parseInt(ptsRow?.redeemed || '0', 10);
-  const redeemedReversed = parseInt(ptsRow?.redeemed_reversed || '0', 10);
+  const [pointsStats] = await sql`
+    SELECT 
+      COALESCE(SUM(CASE WHEN type = 'ISSUE' THEN amount ELSE 0 END), 0)::int as issued,
+      COALESCE(SUM(CASE WHEN type = 'REDEEM' THEN amount ELSE 0 END), 0)::int as redeemed
+    FROM transactions
+  `.catch(() => [{ issued: 0, redeemed: 0 }]);
 
   return {
     merchants: {
-      total: totalMerchants,
-      pending,
-      active,
-      suspended,
+      total: Number(merchantsCount?.total || 0),
+      active: Number(merchantsCount?.active || 0),
+      pending: Number(merchantsCount?.pending || 0),
     },
-    total_customers: totalCustomers,
-    points_issued: Math.max(0, grossIssued - issuedReversed),
-    points_redeemed: Math.max(0, grossRedeemed - redeemedReversed),
+    total_customers: Number(customersCount?.total || 0),
+    points_issued: Number(pointsStats?.issued || 0),
+    points_redeemed: Number(pointsStats?.redeemed || 0),
   };
 }
 
-export async function merchantDashboard(db: Sql, merchantId: string): Promise<MerchantDashboardView> {
-  const [custRow] = await db<{ count: string; circulating: string | null }[]>`
-    SELECT 
-      COUNT(*)::text as count,
-      COALESCE(SUM(balance), 0)::text as circulating
-    FROM customers
-    WHERE merchant_id = ${merchantId}
-  `;
+export async function merchantDashboard(sql: Sql, merchantId: string) {
+  const [customersCount] = await sql`
+    SELECT COUNT(*)::int as total FROM customers WHERE merchant_id = ${merchantId}
+  `.catch(() => [{ total: 0 }]);
 
-  const totalCustomers = parseInt(custRow?.count || '0', 10);
-  const circulatingPoints = parseInt(custRow?.circulating || '0', 10);
+  const [pointsCirculating] = await sql`
+    SELECT COALESCE(SUM(balance), 0)::int as circulating FROM customers WHERE merchant_id = ${merchantId}
+  `.catch(() => [{ circulating: 0 }]);
 
-  const [txRow] = await db<{ count: string }[]>`
-    SELECT COUNT(*)::text as count
-    FROM transactions
-    WHERE merchant_id = ${merchantId}
-      AND (created_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Ho_Chi_Minh')::date
-  `;
-
-  const todayTransactions = parseInt(txRow?.count || '0', 10);
+  const [todayTx] = await sql`
+    SELECT COUNT(*)::int as total 
+    FROM transactions 
+    WHERE merchant_id = ${merchantId} 
+      AND created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Bangkok' >= CURRENT_DATE
+  `.catch(() => [{ total: 0 }]);
 
   return {
-    total_customers: totalCustomers,
-    circulating_points: circulatingPoints,
-    today_transactions: todayTransactions,
+    total_customers: Number(customersCount?.total || 0),
+    circulating_points: Number(pointsCirculating?.circulating || 0),
+    today_transactions: Number(todayTx?.total || 0),
   };
 }
