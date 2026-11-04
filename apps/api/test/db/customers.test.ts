@@ -18,7 +18,6 @@ describe('T05 - Customer Management Services', () => {
     db = await createTestDatabase();
     sql = db.sql;
 
-    // Sử dụng mã merchant đúng định dạng MCH-xxxxxx
     const [m1] = await sql`
       INSERT INTO merchants (code, name, status) VALUES ('MCH-000010', 'Store A', 'ACTIVE') RETURNING id
     `;

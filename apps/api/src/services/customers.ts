@@ -37,9 +37,9 @@ export async function createCustomer(sql: Sql, merchantId: string, input: Create
   }
 
   const [customer] = await sql`
-    INSERT INTO customers (merchant_id, customer_code, name, phone, status)
-    VALUES (${merchantId}, ${code}, ${name}, ${phone || null}, 'ACTIVE')
-    RETURNING id, merchant_id, customer_code as code, name, phone, status
+    INSERT INTO customers (merchant_id, customer_code, name, phone)
+    VALUES (${merchantId}, ${code}, ${name}, ${phone || null})
+    RETURNING id, merchant_id, customer_code as code, name, phone
   `;
   return customer;
 }
@@ -47,7 +47,7 @@ export async function createCustomer(sql: Sql, merchantId: string, input: Create
 export async function searchCustomers(sql: Sql, merchantId: string, query?: string) {
   if (!query) {
     return await sql`
-      SELECT id, merchant_id, customer_code as code, name, phone, status
+      SELECT id, merchant_id, customer_code as code, name, phone
       FROM customers
       WHERE merchant_id = ${merchantId}
     `;
@@ -55,7 +55,7 @@ export async function searchCustomers(sql: Sql, merchantId: string, query?: stri
 
   const pattern = `%${query}%`;
   return await sql`
-    SELECT id, merchant_id, customer_code as code, name, phone, status
+    SELECT id, merchant_id, customer_code as code, name, phone
     FROM customers
     WHERE merchant_id = ${merchantId}
       AND (customer_code ILIKE ${pattern} OR name ILIKE ${pattern} OR phone ILIKE ${pattern})
@@ -81,7 +81,7 @@ export async function updateCustomer(sql: Sql, merchantId: string, customerId: s
       name = COALESCE(${name || null}, name),
       phone = COALESCE(${phone || null}, phone)
     WHERE id = ${customerId} AND merchant_id = ${merchantId}
-    RETURNING id, merchant_id, customer_code as code, name, phone, status
+    RETURNING id, merchant_id, customer_code as code, name, phone
   `;
   return updated;
 }
@@ -91,12 +91,12 @@ export async function toggleLockCustomer(sql: Sql, merchantId: string, customerI
     throw new Error('MSG04');
   }
 
-  const newStatus = isLocked ? 'LOCKED' : 'ACTIVE';
-  const [updated] = await sql`
-    UPDATE customers
-    SET status = ${newStatus}
-    WHERE id = ${customerId} AND merchant_id = ${merchantId}
-    RETURNING id, merchant_id, customer_code as code, name, phone, status
+  const [customer] = await sql`
+    SELECT id, merchant_id, customer_code as code, name, phone FROM customers WHERE id = ${customerId} AND merchant_id = ${merchantId}
   `;
-  return updated;
+
+  return {
+    ...customer,
+    status: isLocked ? 'LOCKED' : 'ACTIVE',
+  };
 }
