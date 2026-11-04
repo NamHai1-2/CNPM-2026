@@ -14,12 +14,11 @@ export interface UpdateCustomerInput {
 export async function createCustomer(sql: Sql, merchantId: string, input: CreateCustomerInput) {
   const { code, name, phone } = input;
 
-  // Mã bắt buộc và không được chứa chữ cái thường
   if (!code || /[a-z]/.test(code)) {
-    throw new Error('Mã khách hàng phải viết hoa và không chứa chữ thường');
+    throw new Error('Mã khách hàng không được để trống và không chứa chữ thường');
   }
 
-  // Check trùng mã khách hàng -> MSG27
+  // Trùng mã khách hàng -> MSG27
   const [existingCode] = await sql`
     SELECT id FROM customers WHERE customer_code = ${code}
   `;
@@ -27,7 +26,7 @@ export async function createCustomer(sql: Sql, merchantId: string, input: Create
     throw new Error('MSG27');
   }
 
-  // Check trùng SĐT trong cùng cửa hàng -> MSG38
+  // Trùng SĐT trong cùng cửa hàng -> MSG38
   if (phone) {
     const [existingPhone] = await sql`
       SELECT id FROM customers WHERE merchant_id = ${merchantId} AND phone = ${phone}

@@ -18,11 +18,12 @@ describe('T05 - Customer Management Services', () => {
     db = await createTestDatabase();
     sql = db.sql;
 
+    // Sử dụng mã merchant đúng định dạng MCH-xxxxxx
     const [m1] = await sql`
-      INSERT INTO merchants (code, name, status) VALUES ('MCH-A', 'Store A', 'ACTIVE') RETURNING id
+      INSERT INTO merchants (code, name, status) VALUES ('MCH-000010', 'Store A', 'ACTIVE') RETURNING id
     `;
     const [m2] = await sql`
-      INSERT INTO merchants (code, name, status) VALUES ('MCH-B', 'Store B', 'ACTIVE') RETURNING id
+      INSERT INTO merchants (code, name, status) VALUES ('MCH-000011', 'Store B', 'ACTIVE') RETURNING id
     `;
     merchantAId = m1.id;
     merchantBId = m2.id;
@@ -77,7 +78,7 @@ describe('T05 - Customer Management Services', () => {
 
   it('cho phép trùng SĐT ở hai cửa hàng khác nhau', async () => {
     const customerB = await createCustomer(sql, merchantBId, {
-      code: 'CUST001',
+      code: 'CUST004',
       name: 'Tran Van E',
       phone: '0901234567',
     });
