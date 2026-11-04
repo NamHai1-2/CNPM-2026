@@ -25,7 +25,7 @@ describe('T10 - Dashboard API Services', () => {
     }
   });
 
-  it('th?ng k� d�ng khi co s? d? li?u tr?ng', async () => {
+  it('thống kê đúng khi cơ sở dữ liệu trống', async () => {
     const adminRes = await adminDashboard(sql);
     expect(adminRes.merchants.total).toBe(0);
     expect(adminRes.total_customers).toBe(0);
@@ -33,7 +33,7 @@ describe('T10 - Dashboard API Services', () => {
     expect(adminRes.points_redeemed).toBe(0);
   });
 
-  it('th?ng k� d�ng s? lu?ng merchant v� kh�ch h�ng cho Admin', async () => {
+  it('thống kê đúng số lượng merchant và khách hàng cho Admin', async () => {
     const [m1] = await sql`
       INSERT INTO merchants (code, name, status) VALUES ('MCH-000001', 'Shop A', 'ACTIVE') RETURNING id
     `;
@@ -51,7 +51,7 @@ describe('T10 - Dashboard API Services', () => {
     expect(res.total_customers).toBe(1);
   });
 
-  it('th?ng k� d? li?u merchant dashboard', async () => {
+  it('thống kê dữ liệu merchant dashboard', async () => {
     const [m1] = await sql`
       INSERT INTO merchants (code, name, status) VALUES ('MCH-000003', 'Shop C', 'ACTIVE') RETURNING id
     `;
