@@ -14,5 +14,6 @@ export const NAV_ITEMS: MenuItem[] = [
 
 export function getMenuForRole(role?: string): MenuItem[] {
   if (!role) return [];
-  return NAV_ITEMS.filter((item) => item.roles.includes(role as any));
+  type UserRole = 'ADMIN' | 'MERCHANT_OWNER' | 'STAFF';
+  return NAV_ITEMS.filter((item) => item.roles.includes(role as UserRole));
 }

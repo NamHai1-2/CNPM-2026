@@ -2,7 +2,7 @@ export interface ApiOptions extends RequestInit {
   data?: unknown;
 }
 
-export async function apiFetch<T = any>(endpoint: string, options: ApiOptions = {}): Promise<T> {
+export async function apiFetch<T = unknown>(endpoint: string, options: ApiOptions = {}): Promise<T> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -19,12 +19,11 @@ export async function apiFetch<T = any>(endpoint: string, options: ApiOptions = 
     body: options.data ? JSON.stringify(options.data) : options.body,
   });
 
-  const resData = await response.json().catch(() => ({}));
+  const resData = (await response.json().catch(() => ({}))) as Record<string, unknown>;
 
   if (!response.ok || resData.error) {
-    const errorCode = resData.code || resData.message || resData.error;
+    const errorCode = (resData.code || resData.message || resData.error) as string;
 
-    // Khi hết phiên làm việc hoặc bị trả về MSG35 -> Tự động xoá token và chuyển về Login
     if (errorCode === 'MSG35' || response.status === 401) {
       localStorage.removeItem('access_token');
       localStorage.removeItem('user_info');
