@@ -34,15 +34,15 @@ describe('T10 - Dashboard API Services', () => {
   });
 
   it('thống kê đúng số lượng merchant và khách hàng cho Admin', async () => {
-    const [m1] = await sql
+    const [m1] = await sql`
       INSERT INTO merchants (code, name, status) VALUES ('MCH-000001', 'Shop A', 'ACTIVE') RETURNING id
-    ;
-    await sql
+    `;
+    await sql`
       INSERT INTO merchants (code, name, status) VALUES ('MCH-000002', 'Shop B', 'PENDING') RETURNING id
-    ;
-    await sql
-      INSERT INTO customers (merchant_id, customer_code, name, balance) VALUES (, 'CUST01', 'Nguyen A', 100)
-    ;
+    `;
+    await sql`
+      INSERT INTO customers (merchant_id, customer_code, name, balance) VALUES (${m1.id}, 'CUST01', 'Nguyen A', 100)
+    `;
 
     const res = await adminDashboard(sql);
     expect(res.merchants.total).toBe(2);
@@ -52,9 +52,9 @@ describe('T10 - Dashboard API Services', () => {
   });
 
   it('thống kê dữ liệu merchant dashboard', async () => {
-    const [m1] = await sql
+    const [m1] = await sql`
       INSERT INTO merchants (code, name, status) VALUES ('MCH-000003', 'Shop C', 'ACTIVE') RETURNING id
-    ;
+    `;
     const res = await merchantDashboard(sql, m1.id);
     expect(res.total_customers).toBe(0);
     expect(res.circulating_points).toBe(0);

@@ -1,24 +1,24 @@
 import { Sql } from '../db/client.js';
 
 export async function adminDashboard(sql: Sql) {
-  const [merchantsCount] = await sql
+  const [merchantsCount] = await sql`
     SELECT 
       COUNT(*)::int as total,
       COUNT(*) FILTER (WHERE status = 'ACTIVE')::int as active,
       COUNT(*) FILTER (WHERE status = 'PENDING')::int as pending
     FROM merchants
-  .catch(() => [{ total: 0, active: 0, pending: 0 }]);
+  `.catch(() => [{ total: 0, active: 0, pending: 0 }]);
 
-  const [customersCount] = await sql
+  const [customersCount] = await sql`
     SELECT COUNT(*)::int as total FROM customers
-  .catch(() => [{ total: 0 }]);
+  `.catch(() => [{ total: 0 }]);
 
-  const [pointsStats] = await sql
+  const [pointsStats] = await sql`
     SELECT 
       COALESCE(SUM(CASE WHEN type = 'ISSUE' THEN amount ELSE 0 END), 0)::int as issued,
       COALESCE(SUM(CASE WHEN type = 'REDEEM' THEN amount ELSE 0 END), 0)::int as redeemed
     FROM transactions
-  .catch(() => [{ issued: 0, redeemed: 0 }]);
+  `.catch(() => [{ issued: 0, redeemed: 0 }]);
 
   return {
     merchants: {
@@ -33,20 +33,20 @@ export async function adminDashboard(sql: Sql) {
 }
 
 export async function merchantDashboard(sql: Sql, merchantId: string) {
-  const [customersCount] = await sql
-    SELECT COUNT(*)::int as total FROM customers WHERE merchant_id = 
-  .catch(() => [{ total: 0 }]);
+  const [customersCount] = await sql`
+    SELECT COUNT(*)::int as total FROM customers WHERE merchant_id = ${merchantId}
+  `.catch(() => [{ total: 0 }]);
 
-  const [pointsCirculating] = await sql
-    SELECT COALESCE(SUM(balance), 0)::int as circulating FROM customers WHERE merchant_id = 
-  .catch(() => [{ circulating: 0 }]);
+  const [pointsCirculating] = await sql`
+    SELECT COALESCE(SUM(balance), 0)::int as circulating FROM customers WHERE merchant_id = ${merchantId}
+  `.catch(() => [{ circulating: 0 }]);
 
-  const [todayTx] = await sql
+  const [todayTx] = await sql`
     SELECT COUNT(*)::int as total 
     FROM transactions 
-    WHERE merchant_id =  
+    WHERE merchant_id = ${merchantId} 
       AND created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Bangkok' >= CURRENT_DATE
-  .catch(() => [{ total: 0 }]);
+  `.catch(() => [{ total: 0 }]);
 
   return {
     total_customers: Number(customersCount?.total || 0),
