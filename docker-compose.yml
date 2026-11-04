@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: octapoint
       POSTGRES_DB: octapoint
     ports:
-      - '5432:5432'
+      - '5433:5432'
     volumes:
       - octapoint-pgdata:/var/lib/postgresql/data
     healthcheck:

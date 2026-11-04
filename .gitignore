@@ -15,3 +15,7 @@ contracts/anchor/build/
 # Database dumps may contain customer data
 *.dump
 *.sql.gz
+
+# TypeScript / Next.js generated
+*.tsbuildinfo
+next-env.d.ts

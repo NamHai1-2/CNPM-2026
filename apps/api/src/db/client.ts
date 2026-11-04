@@ -18,5 +18,5 @@ export function createSql(url: string, options: { max?: number } = {}): Sql {
     max: options.max ?? 10,
     onnotice: () => {},
     types: { bigint: bigintAsNumber },
-  });
+  }) as unknown as Sql;
 }
