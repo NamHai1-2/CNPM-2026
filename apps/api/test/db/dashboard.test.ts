@@ -14,14 +14,10 @@ describe('T10 - Dashboard API Services', () => {
 
   afterAll(async () => {
     if (sql) {
-      try {
-        await sql.end();
-      } catch {}
+      await sql.end().catch(() => undefined);
     }
     if (db) {
-      try {
-        await db.drop();
-      } catch {}
+      await db.drop().catch(() => undefined);
     }
   });
 
