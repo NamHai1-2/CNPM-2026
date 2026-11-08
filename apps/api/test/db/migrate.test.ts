@@ -48,6 +48,17 @@ describe('migrations', () => {
     }
   });
 
+  it('ignore line-ending differences (Windows checkouts)', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'octapoint-mig-'));
+    try {
+      const original = await readFile(MIGRATION, 'utf8');
+      await writeFile(join(dir, '0001_init.sql'), original.replace(/\r?\n/g, '\r\n'));
+      expect(await migrate(db.sql, dir)).toEqual([]);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it('apply a new numbered file on top', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'octapoint-mig-'));
     try {
