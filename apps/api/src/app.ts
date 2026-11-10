@@ -4,20 +4,21 @@ import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import { AppError, toErrorResponse } from './lib/errors.js';
 import { formatMessage } from './lib/messages.js';
 import { logger } from './lib/logger.js';
+import type { AppEnv } from './types.js';
 
 export interface AppDeps {
   /** Resolves when the database answers; rejects otherwise. */
   checkDb: () => Promise<void>;
+  /** Adds the API routes (src/routes/index.ts registerRoutes). Optional so tests can build a bare app. */
+  routes?: (app: Hono<AppEnv>) => void;
 }
-
-type Env = { Variables: { requestId: string } };
 
 /**
  * Builds the Hono application. Routes of the two API surfaces (docs/api-spec.md) are added here
  * by the later tasks: external/ (HMAC) and portal/ (session cookie), both under /api/v1.
  */
-export function createApp(deps: AppDeps): Hono<Env> {
-  const app = new Hono<Env>();
+export function createApp(deps: AppDeps): Hono<AppEnv> {
+  const app = new Hono<AppEnv>();
 
   app.use('*', async (c, next) => {
     const requestId = randomUUID();
@@ -38,6 +39,8 @@ export function createApp(deps: AppDeps): Hono<Env> {
     await deps.checkDb();
     return c.json({ status: 'ok' });
   });
+
+  deps.routes?.(app);
 
   app.notFound((c) =>
     // Unknown routes use MSG33 with HTTP 404 (documented in api-spec.md, "Common rules").
