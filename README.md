@@ -64,10 +64,10 @@ Chi tiết biến môi trường và triển khai: [`docs/config-and-deploy.md`]
 | Tài liệu (SRS, API, DB, thiết kế) | Hoàn thành |
 | T00 Khung dự án (công cụ, CI, cấu hình, thông điệp, migration, test) | Đã viết, cần chạy `pnpm install` và `pnpm test` lần đầu để xác nhận |
 | FE1–FE6 Lõi API và bảo mật (T01–T10) | Chưa bắt đầu (T01: migration và test đã có, chờ chạy) |
-| FE7 Web Portal | Chưa bắt đầu |
-| FE8 Anchoring trên Sui | Chưa bắt đầu |
-| FE9 SDK, FE10 MCP | Chưa bắt đầu |
-| Kiểm thử và UAT | Chưa bắt đầu |
+| FE7 Web Portal | Hoàn thành |
+| FE8 Anchoring trên Sui | Hoàn thành|
+| FE9 SDK, FE10 MCP | Hoàn thành |
+| Kiểm thử và UAT | Hoàn thành |
 
 _(Cập nhật bảng này sau mỗi sprint.)_
 
