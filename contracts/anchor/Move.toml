@@ -1,0 +1,12 @@
+[package]
+name = "octapoint"
+edition = "2024"
+
+# Sui CLI 1.45+ adds the Sui framework dependency automatically.
+# If your CLI is older and `sui move build` cannot find `sui::`, add:
+#
+# [dependencies]
+# Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
+
+[addresses]
+octapoint = "0x0"
