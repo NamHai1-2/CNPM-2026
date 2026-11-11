@@ -6,7 +6,7 @@ import { loadEnv } from './env.js';
 import { logger } from './lib/logger.js';
 import { registerRoutes } from './routes/index.js';
 import { cleanupExpired } from './services/maintenance.js';
-import { createSuiChain, startAnchorWorker, toAnchorDb } from './services/anchoring/index.js';
+import { createSuiChain, anchorWorker as startAnchorWorker, toAnchorDb } from './services/anchoring/index.js';
 
 loadEnv();
 const config = loadConfig();
