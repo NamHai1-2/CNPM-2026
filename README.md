@@ -67,7 +67,7 @@ Chi tiết biến môi trường và triển khai: [`docs/config-and-deploy.md`]
 | FE7 Web Portal | Hoàn thành |
 | FE8 Anchoring trên Sui | Hoàn thành|
 | FE9 SDK, FE10 MCP | Hoàn thành |
-| Kiểm thử và UAT | Hoàn thành |
+| Kiểm thử và UAT | chưa xong |
 
 _(Cập nhật bảng này sau mỗi sprint.)_
 
