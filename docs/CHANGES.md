@@ -117,3 +117,24 @@ Temporary errors never fail a transaction; reversal allowed for inactive custome
 - Added `services/customers.ts` (getCustomerForUpdate, findCustomer, toCustomerView, listCustomers, createCustomer, updateCustomer, setCustomerActive, assertCustomerCode), `routes/portal/customers.ts`; one route line in `routes/index.ts`.
 - Tests: `test/db/customers.test.ts` (create, update, list and search, deactivate and reactivate, access control, the lock helper used by T07a and T08).
 - Decisions: an unknown customer or one of another merchant answers 404 MSG22; a malformed code in the path (for example lowercase) answers MSG33; a blank phone means "no phone"; PATCH with nothing to change answers MSG33; the list is newest first and the search text is matched literally (limit 100 characters); deactivating an inactive customer (or reactivating an active one) is a harmless repeat with no second audit row.
+
+---
+
+# Round 11 – T07a (points engine)
+- Added `lib/proof-hash.ts` (canonical JSON + SHA-256, reproduces the vector of db-schema.md section 4), `services/transactions.ts` (insertTransaction, toTransactionView, explorerUrl), `services/points.ts` (issuePointsInTx, redeemPointsInTx, issuePoints, redeemPoints and the CR-02 ceilings). No HTTP routes in this task.
+- Tests: `test/unit/proof-hash.test.ts`, `test/db/points.test.ts`, `test/db/points-concurrency.test.ts`, helper `test/helpers/points.ts`.
+- Decisions: order of failures is input range (MSG33), customer unknown (MSG22), inactive (MSG39), rules missing (MSG32), then the points rules; `insertTransaction` uses `ON CONFLICT (code) DO NOTHING` to retry a code collision because a caught unique error would abort the surrounding transaction; it takes an optional third argument only so that tests can force a collision.
+
+---
+
+# Round 12 – T07b (idempotency and the portal issue/redeem endpoints)
+- Added `services/idempotency.ts` (readIdempotencyKey, hashRequest, withIdempotency), `services/maintenance.ts` (cleanupExpired), `routes/portal/points.ts` (POST `/api/v1/merchant/customers/{code}/issue` and `/redeem`); one route line in `routes/index.ts`; a daily cleanup in `index.ts` (once at start-up, then every 24 hours).
+- Tests: `test/db/idempotency.test.ts`, `test/db/maintenance.test.ts`, `test/db/portal-points.test.ts`.
+- Decisions: the idempotency scope of the portal is the logged-in user (the Owner and a staff member may use the same key); a replay answers with the saved status and body and does not run the work again; the request fingerprint is sha256(METHOD.target.sha256(body)), so other bytes with the same meaning count as another request (MSG34); a blank key is MSG33; the portal answers MSG33 for every wrong body or key, 404 MSG22 for an unknown customer, 422 for the points rules (MSG24, MSG08, MSG09, MSG32, MSG39).
+
+---
+
+# Round 13 – T08 (ledger and reversal)
+- Added `services/ledger.ts` (listLedger, reverseTransaction), `routes/portal/ledger.ts` (merchantLedgerRoutes, adminLedgerRoutes); three route lines in `routes/index.ts`.
+- Tests: `test/db/ledger-list.test.ts`, `test/db/reversal.test.ts` (service and HTTP, including simultaneous reversals).
+- Decisions: `LedgerFilter.type/status` are strings checked inside `listLedger` (wrong value: MSG33); a date such as 2026-02-30 is rejected (checked by round trip); `date_from` after `date_to` returns an empty list; `merchant_code` is ignored for merchant users and checked for the Admin; an unknown transaction code is 404 MSG22 and a malformed one 400 MSG33; the reversal answers 201 `{reversal: ...}`; the customer row is locked before the check "no reversal yet", so simultaneous reversals give one success and the rest MSG26.

@@ -141,7 +141,7 @@ export function toRulesView(rules: LoyaltyRules): LoyaltyRulesView;
 // src/lib/proof-hash.ts
 export function computeProofHash(fields: ProofFields): string;          // đúng ví dụ trong db-schema.md mục 4
 // src/services/transactions.ts
-export async function insertTransaction(tx: Sql, input: NewTransaction): Promise<TransactionRow>;
+export async function insertTransaction(tx: Sql, input: NewTransaction, deps?: { generateCode?: (now: Date) => string }): Promise<TransactionRow>;   // deps chỉ để test ép trùng mã
 //   sinh mã TXN- (thử lại với mã mới khi trùng), created_at theo UTC làm tròn mili-giây, proof_hash; người gọi đã khoá khách
 export function toTransactionView(row: TransactionRow, explorerUrlTemplate: string): TransactionView;
 // src/services/points.ts
@@ -168,7 +168,8 @@ export async function cleanupExpired(sql: Sql): Promise<{ idempotencyDeleted: nu
 
 // ============ T08 · Hải ============
 // src/services/ledger.ts
-export interface LedgerFilter { type?: TxType; status?: TxStatus; dateFrom?: string; dateTo?: string; customerCode?: string; merchantCode?: string; page: number }
+export interface LedgerFilter { type?: string; status?: string; dateFrom?: string; dateTo?: string; customerCode?: string; merchantCode?: string; page: number }
+//   type/status là chuỗi lấy từ query và được kiểm tra trong listLedger (sai giá trị: MSG33); merchantCode chỉ có tác dụng với Admin
 export interface LedgerItem extends TransactionView {
   bill_amount: number | null; performed_by: { kind: 'USER' | 'API_KEY'; label: string };
   reversible: boolean; merchant_code?: string }
@@ -547,8 +548,8 @@ SPECIFIC RULES (order matters):
      balance < points -> MSG08.
 4) UPDATE customers SET balance, updated_at. 5) insertTransaction.
 - insertTransaction: type ISSUE stores bill_amount and earn_ratio used; REDEEM stores them as null; performed_by from actor
-  (exactly one of user/api key); balance_after; code from generateTxCode, retry with a new code only on a unique violation
-  of the transactions.code constraint (max 5 tries); created_at is generated ONCE in code (UTC, rounded to milliseconds), used both for the INSERT and for the proof
+  (exactly one of user/api key); balance_after; code from generateTxCode; on a collision try a new code (max 5 tries) with INSERT ... ON CONFLICT (code) DO
+  NOTHING RETURNING id and a new try when no row comes back (catching the unique error would abort the surrounding transaction); created_at is generated ONCE in code (UTC, rounded to milliseconds), used both for the INSERT and for the proof
   hash (never rely on the database default), formatted ISO 8601 with a trailing Z; proof_hash = computeProofHash(...) over exactly the fields in db-schema.md section 4 (REVERSAL adds
   reverses_transaction_id = the original's code). Return a TransactionRow joined with customerCode.
 - computeProofHash: canonical JSON with keys sorted alphabetically, no whitespace, UTF-8, sha256 lowercase hex.
@@ -636,6 +637,9 @@ SPECIFIC RULES:
   REDEEM reversal adds them: new balance above 1,000,000,000 -> MSG41; (5) update the balance, insertTransaction type REVERSAL with
   the same points and reverses {id, code}; (6) audit REVERSAL_CREATED. Success MSG19 (returned by the route).
 - The anchoring status of the original does not matter, and the customer MAY be inactive: do NOT check is_active in a reversal.
+- Filters are validated in listLedger: a wrong type, status, date (not a real YYYY-MM-DD day), customer code (lowercase...) or merchant code ->
+  400 MSG33; date_from after date_to matches nothing (no error); merchant_code is ignored for a merchant user and checked for the Admin.
+  An unknown transaction code in reverse -> 404 MSG22, a malformed one (not TXN-YYYYMMDD-XXXXXXXX) -> 400 MSG33; reverse answers 201 {reversal: <view>}.
   A REVERSAL can never be reversed (the database trigger also enforces this).
 - page that is not an integer >= 1 -> 400 MSG33; a page beyond the last returns empty items.
 - Routes: Owner for reverse; Owner and staff for the merchant list; Admin for admin list. merchant_id from the session.

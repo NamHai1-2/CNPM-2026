@@ -1,0 +1,16 @@
+{
+  "name": "@octapoint/mcp",
+  "private": true,
+  "version": "0.1.0",
+  "description": "OctaPoint MCP server (stdio, read-only).",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@octapoint/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0"
+  }
+}
