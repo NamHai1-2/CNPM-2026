@@ -64,3 +64,70 @@ Temporary errors never fail a transaction; reversal allowed for inactive custome
 
 ## Not verified here (no network, no PostgreSQL in the authoring environment)
 `pnpm install`, TypeScript compilation, ESLint, the tests that import hono, zod, postgres or bcryptjs, all database tests, the interactive `reset:password` prompt, the CI workflow and the Next.js app. The pure-logic tests (messages, errors, HMAC vectors, request target, password policy) were run with a small stand-in for vitest.
+
+---
+
+# Round 3 – Jira plan
+- `docs/jira-plan.md`: cách tổ chức Jira (epic, story, sub-task, workflow, Definition of Done), lịch Sprint 3 và 4, và thẻ công việc cho T02–T16 (người làm, người xem lại, đầu vào, đầu ra, mô tả, cách làm, nghiệm thu).
+- `docs/jira-import.csv`: 12 epic, 19 story và 19 sub-task "Code review" để nhập vào Jira (chưa thử trên Jira thật).
+- T07 tách thành T07a và T07b, T13 thành T13a và T13b, T16 thành T16a, T16b và T16c để chia việc cho nhiều người.
+
+---
+
+# Round 4 – ready for GitHub
+- Added `.gitattributes` (LF line endings on every machine) and made the migration checksum ignore line endings, so a Windows checkout does not break `migrate` for teammates (new test `migrate.test.ts`).
+- Default database port is 5433 everywhere (`docker-compose.yml`, `.env.example`, README, docs). `eslint.config.mjs` knows `URL`. CI uses `--frozen-lockfile` and `pnpm-lock.yaml` is part of the repository.
+- `docs/github-setup.md`: push, branch protection, onboarding of members, daily workflow.
+- `docs/ai-prompts.md` and `types.ts` aligned with the earlier document changes: temporary Sui errors (T12), signed idempotency key and `serverTime` (T09, T14), points ceiling (T07a), reversal for inactive customers (T08), upper-cased MCP customer code (T15), audit actions for customers and password changes. `writeAudit` now belongs to T02.
+
+---
+
+# Round 5 – T02 (login, session, account settings)
+- Added `src/middleware/auth.ts` (requireSession, requireRole, requireCsrfHeader, requireMerchantId), `src/services/auth.ts`, `src/services/audit.ts`, `src/routes/portal/auth.ts` (login, logout, me, change-password), `src/routes/index.ts` (route registry), `src/lib/http.ts` (parseJsonBody), `src/types.ts` unchanged.
+- `app.ts` now uses `AppEnv` and accepts optional `routes`; `index.ts` registers the routes.
+- Test helpers `test/helpers/app.ts` and `test/helpers/auth.ts`; tests in `test/db/auth.test.ts`.
+- Decision: an unknown email still runs one BCrypt comparison with a dummy hash, so the response time does not reveal whether the account exists.
+
+- T02 fix after the first typecheck: `withTransaction(sql, fn)` in `db/client.ts` replaces `sql.begin` in services (TransactionSql is not assignable to Sql); `auth.test.ts` helper `send` is async; new test `transaction.test.ts`.
+
+---
+
+# Round 6 – T03 (registration, approve/suspend, shared helpers)
+- Added `lib/codes.ts` (generateMerchantCode, generateTxCode), `lib/pg-errors.ts` (isUniqueViolation), `services/merchants.ts`, `routes/portal/registration.ts`, `routes/portal/admin-merchants.ts`; two route lines in `routes/index.ts`.
+- Tests: `test/unit/codes.test.ts`, `test/unit/pg-errors.test.ts`, `test/db/merchants.test.ts`, helper `test/helpers/tenant.ts` (createTwoMerchants).
+- Decisions: an unknown or malformed merchant id and a forbidden status change both answer MSG33 (no "merchant not found" message exists); register returns `{}` with 201; approve and suspend return the merchant view; request logging is silent when NODE_ENV is "test".
+
+---
+
+# Round 7 – T04 (staff accounts and API keys)
+- Added `lib/crypto.ts` (AES-256-GCM), `lib/validation.ts` (isUuid, isValidEmail; `services/merchants.ts` now uses them), `services/apikeys.ts`, `services/staff.ts`, `routes/portal/staff.ts`, `routes/portal/api-keys.ts`; two route lines in `routes/index.ts`.
+- Tests: `test/unit/crypto.test.ts`, `test/db/staff.test.ts`, `test/db/apikeys.test.ts`.
+- Decisions: a key of another merchant, an unknown id and a malformed id all answer MSG33; revoking a revoked key and deactivating an inactive staff account are harmless repeats (200, no second audit row); staff and key lists use the Page shape (20 per page); creating a key locks the merchant row so the limit of 5 holds under simultaneous requests.
+
+---
+
+# Round 8 – T06 (loyalty rules)
+- Added `services/rules.ts` (getLoyaltyRules, toRulesView, saveLoyaltyRules, RULE_MAX), `routes/portal/rules.ts`; one route line in `routes/index.ts`.
+- Tests: `test/unit/rules.test.ts`, `test/db/rules.test.ts`.
+- Decisions: only real JSON integers from 1 to 1,000,000 are accepted (a string such as "10" is MSG33); PUT answers the saved values; every save writes an audit row `RULE_UPDATED` with `{old, new}` (old is null the first time), even when the values did not change; saving locks the merchant row so simultaneous saves run one after the other.
+
+---
+
+# Round 9 – T05 (customers)
+- Added `services/customers.ts` (getCustomerForUpdate, findCustomer, toCustomerView, listCustomers, createCustomer, updateCustomer, setCustomerActive, assertCustomerCode), `routes/portal/customers.ts`; one route line in `routes/index.ts`.
+- Tests: `test/db/customers.test.ts` (create, update, list and search, deactivate and reactivate, access control, the lock helper used by T07a and T08).
+- Decisions: an unknown customer or one of another merchant answers 404 MSG22; a malformed code in the path (for example lowercase) answers MSG33; a blank phone means "no phone"; PATCH with nothing to change answers MSG33; the list is newest first and the search text is matched literally (limit 100 characters); deactivating an inactive customer (or reactivating an active one) is a harmless repeat with no second audit row.
+
+---
+
+# Round 11 – T07a (points engine)
+- Added `lib/proof-hash.ts` (canonical JSON + SHA-256, reproduces the vector of db-schema.md section 4), `services/transactions.ts` (insertTransaction, toTransactionView, explorerUrl), `services/points.ts` (issuePointsInTx, redeemPointsInTx, issuePoints, redeemPoints and the CR-02 ceilings). No HTTP routes in this task.
+- Tests: `test/unit/proof-hash.test.ts`, `test/db/points.test.ts`, `test/db/points-concurrency.test.ts`, helper `test/helpers/points.ts`.
+- Decisions: order of failures is input range (MSG33), customer unknown (MSG22), inactive (MSG39), rules missing (MSG32), then the points rules; `insertTransaction` uses `ON CONFLICT (code) DO NOTHING` to retry a code collision because a caught unique error would abort the surrounding transaction; it takes an optional third argument only so that tests can force a collision.
+
+---
+
+# Round 12 – T07b (idempotency and the portal issue/redeem endpoints)
+- Added `services/idempotency.ts` (readIdempotencyKey, hashRequest, withIdempotency), `services/maintenance.ts` (cleanupExpired), `routes/portal/points.ts` (POST `/api/v1/merchant/customers/{code}/issue` and `/redeem`); one route line in `routes/index.ts`; a daily cleanup in `index.ts` (once at start-up, then every 24 hours).
+- Tests: `test/db/idempotency.test.ts`, `test/db/maintenance.test.ts`, `test/db/portal-points.test.ts`.
+- Decisions: the idempotency scope of the portal is the logged-in user (the Owner and a staff member may use the same key); a replay answers with the saved status and body and does not run the work again; the request fingerprint is sha256(METHOD.target.sha256(body)), so other bytes with the same meaning count as another request (MSG34); a blank key is MSG33; the portal answers MSG33 for every wrong body or key, 404 MSG22 for an unknown customer, 422 for the points rules (MSG24, MSG08, MSG09, MSG32, MSG39).
