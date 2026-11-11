@@ -49,7 +49,7 @@ Central files that must exist in `apps/api/src/lib`:
 | `NODE_ENV` | yes | `production` | |
 | `PORT` | no | `3001` | |
 | `DATABASE_URL` | yes | `postgres://user:pass@host:5432/octapoint` | PostgreSQL 16+ |
-| `TEST_DATABASE_URL` | tests only | `postgres://octapoint:octapoint@localhost:5432/postgres` | Server on which each DB test file creates and drops its own database |
+| `TEST_DATABASE_URL` | tests only | `postgres://octapoint:octapoint@localhost:5433/postgres` | Server on which each DB test file creates and drops its own database |
 | `SECRET_ENCRYPTION_KEY` | yes | 32 random bytes, base64 | Master key for API secrets, AES-256-GCM (CR-07). Generate once; losing it makes all secrets unreadable. |
 | `SUI_RPC_URL` | yes | `https://fullnode.testnet.sui.io:443` | Testnet RPC (LI-02) |
 | `SUI_PRIVATE_KEY` | worker | `suiprivkey…` | Platform wallet (BR-13) |
@@ -83,7 +83,7 @@ Keep **one** `.env` in the repository root. The API loads it from `apps/api/src/
 corepack enable                      # makes the pnpm version in package.json available
 pnpm install
 cp .env.example .env                 # then put a real SECRET_ENCRYPTION_KEY in it (command in the file)
-docker compose up -d db              # PostgreSQL 16 on localhost:5432
+docker compose up -d db              # PostgreSQL 16 on localhost:5433
 pnpm --filter api migrate
 pnpm --filter api seed:admin
 pnpm --filter api dev                # http://localhost:3001/health

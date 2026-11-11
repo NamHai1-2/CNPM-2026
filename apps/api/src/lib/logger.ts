@@ -12,6 +12,8 @@ export const logger = {
   info: (message: string, fields: Record<string, unknown> = {}) => write('info', { message, ...fields }),
   warn: (message: string, fields: Record<string, unknown> = {}) => write('warn', { message, ...fields }),
   error: (message: string, fields: Record<string, unknown> = {}) => write('error', { message, ...fields }),
-  request: (fields: { requestId: string; method: string; path: string; status: number; ms: number }) =>
-    write('info', { message: 'request', ...fields }),
+  request: (fields: { requestId: string; method: string; path: string; status: number; ms: number }) => {
+    if (process.env.NODE_ENV === 'test') return; // keep test output readable
+    write('info', { message: 'request', ...fields });
+  },
 };
