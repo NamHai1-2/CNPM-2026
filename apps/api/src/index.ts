@@ -4,6 +4,7 @@ import { loadConfig } from './config.js';
 import { createSql } from './db/client.js';
 import { loadEnv } from './env.js';
 import { logger } from './lib/logger.js';
+import { registerRoutes } from './routes/index.js';
 
 loadEnv();
 const config = loadConfig();
@@ -13,6 +14,7 @@ const app = createApp({
   checkDb: async () => {
     await sql`SELECT 1`;
   },
+  routes: (api) => registerRoutes(api, { sql, config }),
 });
 
 const server = serve({ fetch: app.fetch, port: config.PORT }, (info) => {
