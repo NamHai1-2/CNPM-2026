@@ -9,6 +9,8 @@ import { cleanupExpired } from './services/maintenance.js';
 import { createSuiChain, startAnchorWorker, toAnchorDb } from './services/anchoring/index.js';
 
 
+
+
 loadEnv();
 const config = loadConfig();
 const sql = createSql(config.DATABASE_URL);
@@ -42,6 +44,18 @@ if (config.ENABLE_ANCHOR_WORKER) {
     { batchSize: config.ANCHOR_BATCH_SIZE },
   );
 }
+
+// Daily cleanup of idempotency keys and sessions (docs/config-and-deploy.md section 4). Runs once at start-up, then every 24 hours.
+async function runCleanup(): Promise<void> {
+  try {
+    logger.info('cleanup', await cleanupExpired(sql));
+  } catch (error) {
+    logger.error('cleanup failed', { error: error instanceof Error ? error.message : String(error) });
+  }
+}
+void runCleanup();
+const cleanupTimer = setInterval(() => void runCleanup(), 24 * 60 * 60 * 1000);
+cleanupTimer.unref(); // the timer alone must not keep the process alive
 
 // Daily cleanup of idempotency keys and sessions (docs/config-and-deploy.md section 4). Runs once at start-up, then every 24 hours.
 async function runCleanup(): Promise<void> {

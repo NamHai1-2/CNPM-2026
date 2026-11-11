@@ -16,8 +16,6 @@ import { externalPointsRoutes } from './external/points.js';
 import { externalRulesRoutes } from './external/rules.js';
 import { adminDashboardRoutes, merchantDashboardRoutes } from './portal/dashboard.js';
 
-
-
 export interface RouteDeps {
   sql: Sql;
   config: Config;
@@ -46,5 +44,3 @@ export function registerRoutes(app: Hono<AppEnv>, deps: RouteDeps): void {
   app.route('/api/v1/admin/dashboard', adminDashboardRoutes(deps));
   app.route('/api/v1/merchant/dashboard', merchantDashboardRoutes(deps));
 
-
-}
