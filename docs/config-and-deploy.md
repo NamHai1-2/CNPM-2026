@@ -52,6 +52,7 @@ Central files that must exist in `apps/api/src/lib`:
 | `TEST_DATABASE_URL` | tests only | `postgres://octapoint:octapoint@localhost:5433/postgres` | Server on which each DB test file creates and drops its own database |
 | `SECRET_ENCRYPTION_KEY` | yes | 32 random bytes, base64 | Master key for API secrets, AES-256-GCM (CR-07). Generate once; losing it makes all secrets unreadable. |
 | `SUI_RPC_URL` | yes | `https://fullnode.testnet.sui.io:443` | Testnet RPC (LI-02) |
+| `SUI_GRAPHQL_URL` | yes | `https://graphql.testnet.sui.io/graphql` |  |
 | `SUI_PRIVATE_KEY` | worker | `suiprivkey…` | Platform wallet (BR-13) |
 | `SUI_PACKAGE_ID` | worker | `0x…` | Published `anchor` package |
 | `SUI_REGISTRY_ID` | worker | `0x…` | `AnchorRegistry` object |
@@ -67,6 +68,7 @@ Constants in code (not env): business time zone `Asia/Ho_Chi_Minh` (UTC+7), time
 | Variable | Example | Purpose |
 |---|---|---|
 | `API_BASE_URL` | `https://octapoint-api.onrender.com` | Target of the `/api/*` proxy rewrite |
+| `NEXT_PUBLIC_USE_MOCKS` | `false` | `true` runs the portal on in-memory demo data (`src/lib/mocks.ts`) with no API or database; demo logins are listed on the login page. Never `true` in production |
 
 ### MCP server and SDK samples
 `OCTAPOINT_BASE_URL`, `OCTAPOINT_API_KEY`, `OCTAPOINT_API_SECRET` (see `api-spec.md` C.1).
