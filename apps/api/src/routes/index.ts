@@ -28,7 +28,6 @@ export interface RouteDeps {
  */
 export function registerRoutes(app: Hono<AppEnv>, deps: RouteDeps): void {
   app.route('/api/v1/auth', authRoutes(deps));
-
   app.route('/api/v1/auth/register', registrationRoutes(deps));
   app.route('/api/v1/admin/merchants', adminMerchantRoutes(deps));
   app.route('/api/v1/admin/ledger', adminLedgerRoutes(deps));
@@ -43,4 +42,4 @@ export function registerRoutes(app: Hono<AppEnv>, deps: RouteDeps): void {
   app.route('/api/v1/loyalty-rules', externalRulesRoutes(deps));
   app.route('/api/v1/admin/dashboard', adminDashboardRoutes(deps));
   app.route('/api/v1/merchant/dashboard', merchantDashboardRoutes(deps));
-
+}
