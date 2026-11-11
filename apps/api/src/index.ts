@@ -8,6 +8,7 @@ import { registerRoutes } from './routes/index.js';
 import { cleanupExpired } from './services/maintenance.js';
 import { createSuiChain, startAnchorWorker, toAnchorDb } from './services/anchoring/index.js';
 
+
 loadEnv();
 const config = loadConfig();
 const sql = createSql(config.DATABASE_URL);
