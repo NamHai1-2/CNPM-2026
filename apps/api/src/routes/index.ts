@@ -15,7 +15,6 @@ import { staffRoutes } from './portal/staff.js';
 import { externalCustomerRoutes } from './external/customers.js';
 import { externalPointsRoutes } from './external/points.js';
 import { externalRulesRoutes } from './external/rules.js';
-=======
 import { authRoutes } from './portal/auth.js';
 
 
@@ -44,6 +43,5 @@ export function registerRoutes(app: Hono<AppEnv>, deps: RouteDeps): void {
   app.route('/api/v1/points', externalPointsRoutes(deps));
   app.route('/api/v1/customers', externalCustomerRoutes(deps));
   app.route('/api/v1/loyalty-rules', externalRulesRoutes(deps));
-=======
 
 }
