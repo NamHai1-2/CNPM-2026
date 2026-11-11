@@ -12,6 +12,9 @@ A blockchain-backed Credit-as-a-Service (loyalty points) platform. **Academic MV
 2. `docs/db-schema.md`, `docs/api-spec.md`, `docs/anchoring.md` – turn the SRS into tables, endpoints and the worker.
 3. `docs/config-and-deploy.md` – layout, environment variables, deployment.
 4. `docs/implementation-plan.md` – task order (T00–T16) and acceptance criteria.
+5. `apps/api/src/types.ts` and the function signatures in `docs/ai-prompts.md` section 3 – the contracts between tasks. Never rename or reorder them; propose a change instead and update both places in one pull request.
+
+When you use an AI assistant, follow `docs/ai-prompts.md` (base prompt, one prompt per task, review prompt).
 
 If two documents disagree, follow the higher one and **fix the lower one in the same pull request**. If something is missing, ask; do not invent behaviour. Never add a feature that is not in the SRS (see section 8).
 
