@@ -99,7 +99,7 @@ UPDATE transactions SET status = 'ANCHORED', sui_digest = $digest, last_error = 
  WHERE id = $id AND status = 'PENDING_ANCHOR';
 ```
 
-**4. Contract abort `E_DUPLICATE` (1):** an earlier attempt already succeeded (for example the process stopped before saving). Find the digest with an RPC event query for the event type `${SUI_PACKAGE_ID}::anchor::Anchored`, newest events first, at most 20 pages of 50 events; match `tx_id` in the event data, take the `txDigest` of that event and save it as in step 3. If it cannot be found, treat it as a counted failure (step 4c).
+**4. Contract abort `E_DUPLICATE` (1):** an earlier attempt already succeeded (for example the process stopped before saving). Find the digest with an GraphQL event query for the event type `${SUI_PACKAGE_ID}::anchor::Anchored`, newest events first, at most 20 pages of 50 events; match `tx_id` in the event data, take the `txDigest` of that event and save it as in step 3. If it cannot be found, treat it as a counted failure (step 4c).
 
 **4b. Temporary infrastructure error** (network error or timeout, RPC unavailable or 5xx, RPC rate limit, insufficient gas or no gas coin, object-version conflict): this is **not** an attempt.
 - Do not change `attempt_count`. Set `next_attempt_at = now() + interval '5 minutes'`, save a short `last_error` and log a warning (for gas: "platform wallet balance too low").

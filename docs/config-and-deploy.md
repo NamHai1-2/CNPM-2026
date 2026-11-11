@@ -52,6 +52,7 @@ Central files that must exist in `apps/api/src/lib`:
 | `TEST_DATABASE_URL` | tests only | `postgres://octapoint:octapoint@localhost:5433/postgres` | Server on which each DB test file creates and drops its own database |
 | `SECRET_ENCRYPTION_KEY` | yes | 32 random bytes, base64 | Master key for API secrets, AES-256-GCM (CR-07). Generate once; losing it makes all secrets unreadable. |
 | `SUI_RPC_URL` | yes | `https://fullnode.testnet.sui.io:443` | Testnet RPC (LI-02) |
+| `SUI_GRAPHQL_URL` | yes | `https://graphql.testnet.sui.io/graphql` |  |
 | `SUI_PRIVATE_KEY` | worker | `suiprivkey…` | Platform wallet (BR-13) |
 | `SUI_PACKAGE_ID` | worker | `0x…` | Published `anchor` package |
 | `SUI_REGISTRY_ID` | worker | `0x…` | `AnchorRegistry` object |
