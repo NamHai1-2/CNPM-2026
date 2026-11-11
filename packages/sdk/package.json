@@ -1,0 +1,14 @@
+{
+  "name": "@octapoint/sdk",
+  "private": true,
+  "version": "0.1.0",
+  "description": "OctaPoint TypeScript SDK (signs requests with HMAC). Not published to npm (LI-10).",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0"
+  }
+}
