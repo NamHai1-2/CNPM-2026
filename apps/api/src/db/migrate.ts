@@ -33,7 +33,8 @@ export async function migrate(sql: Sql, dir: string = MIGRATIONS_DIR): Promise<s
 
     for (const file of files) {
       const content = await readFile(join(dir, file), 'utf8');
-      const checksum = createHash('sha256').update(content).digest('hex');
+      // Normalise line endings so a Windows checkout (CRLF) has the same checksum as a Linux one (LF).
+      const checksum = createHash('sha256').update(content.replace(/\r\n/g, '\n')).digest('hex');
       const previous = done.get(file);
       if (previous !== undefined) {
         if (previous !== checksum) {
