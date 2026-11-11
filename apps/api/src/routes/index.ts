@@ -11,6 +11,10 @@ import { portalPointsRoutes } from './portal/points.js';
 import { registrationRoutes } from './portal/registration.js';
 import { ruleRoutes } from './portal/rules.js';
 import { staffRoutes } from './portal/staff.js';
+import { externalCustomerRoutes } from './external/customers.js';
+import { externalPointsRoutes } from './external/points.js';
+import { externalRulesRoutes } from './external/rules.js';
+import { adminDashboardRoutes, merchantDashboardRoutes } from './portal/dashboard.js';
 
 export interface RouteDeps {
   sql: Sql;
@@ -33,4 +37,9 @@ export function registerRoutes(app: Hono<AppEnv>, deps: RouteDeps): void {
   app.route('/api/v1/merchant/customers', portalPointsRoutes(deps));
   app.route('/api/v1/merchant/rules', ruleRoutes(deps));
   app.route('/api/v1/merchant/ledger', merchantLedgerRoutes(deps));
+  app.route('/api/v1/points', externalPointsRoutes(deps));
+  app.route('/api/v1/customers', externalCustomerRoutes(deps));
+  app.route('/api/v1/loyalty-rules', externalRulesRoutes(deps));
+  app.route('/api/v1/admin/dashboard', adminDashboardRoutes(deps));
+  app.route('/api/v1/merchant/dashboard', merchantDashboardRoutes(deps));
 }
