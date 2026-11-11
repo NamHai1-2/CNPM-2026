@@ -168,7 +168,8 @@ export async function cleanupExpired(sql: Sql): Promise<{ idempotencyDeleted: nu
 
 // ============ T08 · Hải ============
 // src/services/ledger.ts
-export interface LedgerFilter { type?: TxType; status?: TxStatus; dateFrom?: string; dateTo?: string; customerCode?: string; merchantCode?: string; page: number }
+export interface LedgerFilter { type?: string; status?: string; dateFrom?: string; dateTo?: string; customerCode?: string; merchantCode?: string; page: number }
+//   type/status là chuỗi lấy từ query và được kiểm tra trong listLedger (sai giá trị: MSG33); merchantCode chỉ có tác dụng với Admin
 export interface LedgerItem extends TransactionView {
   bill_amount: number | null; performed_by: { kind: 'USER' | 'API_KEY'; label: string };
   reversible: boolean; merchant_code?: string }
@@ -636,6 +637,9 @@ SPECIFIC RULES:
   REDEEM reversal adds them: new balance above 1,000,000,000 -> MSG41; (5) update the balance, insertTransaction type REVERSAL with
   the same points and reverses {id, code}; (6) audit REVERSAL_CREATED. Success MSG19 (returned by the route).
 - The anchoring status of the original does not matter, and the customer MAY be inactive: do NOT check is_active in a reversal.
+- Filters are validated in listLedger: a wrong type, status, date (not a real YYYY-MM-DD day), customer code (lowercase...) or merchant code ->
+  400 MSG33; date_from after date_to matches nothing (no error); merchant_code is ignored for a merchant user and checked for the Admin.
+  An unknown transaction code in reverse -> 404 MSG22, a malformed one (not TXN-YYYYMMDD-XXXXXXXX) -> 400 MSG33; reverse answers 201 {reversal: <view>}.
   A REVERSAL can never be reversed (the database trigger also enforces this).
 - page that is not an integer >= 1 -> 400 MSG33; a page beyond the last returns empty items.
 - Routes: Owner for reverse; Owner and staff for the merchant list; Admin for admin list. merchant_id from the session.

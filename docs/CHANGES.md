@@ -131,3 +131,10 @@ Temporary errors never fail a transaction; reversal allowed for inactive custome
 - Added `services/idempotency.ts` (readIdempotencyKey, hashRequest, withIdempotency), `services/maintenance.ts` (cleanupExpired), `routes/portal/points.ts` (POST `/api/v1/merchant/customers/{code}/issue` and `/redeem`); one route line in `routes/index.ts`; a daily cleanup in `index.ts` (once at start-up, then every 24 hours).
 - Tests: `test/db/idempotency.test.ts`, `test/db/maintenance.test.ts`, `test/db/portal-points.test.ts`.
 - Decisions: the idempotency scope of the portal is the logged-in user (the Owner and a staff member may use the same key); a replay answers with the saved status and body and does not run the work again; the request fingerprint is sha256(METHOD.target.sha256(body)), so other bytes with the same meaning count as another request (MSG34); a blank key is MSG33; the portal answers MSG33 for every wrong body or key, 404 MSG22 for an unknown customer, 422 for the points rules (MSG24, MSG08, MSG09, MSG32, MSG39).
+
+---
+
+# Round 13 – T08 (ledger and reversal)
+- Added `services/ledger.ts` (listLedger, reverseTransaction), `routes/portal/ledger.ts` (merchantLedgerRoutes, adminLedgerRoutes); three route lines in `routes/index.ts`.
+- Tests: `test/db/ledger-list.test.ts`, `test/db/reversal.test.ts` (service and HTTP, including simultaneous reversals).
+- Decisions: `LedgerFilter.type/status` are strings checked inside `listLedger` (wrong value: MSG33); a date such as 2026-02-30 is rejected (checked by round trip); `date_from` after `date_to` returns an empty list; `merchant_code` is ignored for merchant users and checked for the Admin; an unknown transaction code is 404 MSG22 and a malformed one 400 MSG33; the reversal answers 201 `{reversal: ...}`; the customer row is locked before the check "no reversal yet", so simultaneous reversals give one success and the rest MSG26.

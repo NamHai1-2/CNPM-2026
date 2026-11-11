@@ -54,7 +54,7 @@ describe('issue', () => {
       expected += points;
       expect(row.balanceAfter).toBe(expected);
     }
-    expect(await balanceOf(sql, f.customerId)).toBe(20);
+    expect(await balanceOf(sql, f.customerId)).toBe(21); // 10 + 9 + 1 + 1
   });
 
   it('stores the bill amount, the earn ratio used, the actor and a PENDING_ANCHOR status', async () => {
@@ -152,7 +152,7 @@ describe('issue', () => {
 
 describe('redeem', () => {
   it('deducts the points, stores a REDEEM row without bill amount or ratio, and may reach exactly 0', async () => {
-    const f = await pointsFixture(sql, { balance: 100 });
+    const f = await pointsFixture(sql, { balance: 100, minRedemption: 10 }); // the last redeem (40) must reach the minimum
     const row = await redeemPoints(sql, { merchantId: f.merchantId, customerCode: 'CUS001', points: 60, actor: f.actor });
     expect(row).toMatchObject({ type: 'REDEEM', points: 60, billAmount: null, earnRatio: null, balanceAfter: 40, status: 'PENDING_ANCHOR' });
     const [stored] = await sql`SELECT bill_amount, earn_ratio, balance_after FROM transactions WHERE id = ${row.id}`;

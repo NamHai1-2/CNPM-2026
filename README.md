@@ -63,7 +63,7 @@ Chi tiết biến môi trường và triển khai: [`docs/config-and-deploy.md`]
 |---|---|
 | Tài liệu (SRS, API, DB, thiết kế) | Hoàn thành |
 | T00 Khung dự án (công cụ, CI, cấu hình, thông điệp, migration, test) | Hoàn thành, đã kiểm thử (63 test đạt) |
-| FE1–FE6 Lõi API và bảo mật (T01–T10) | T01 (cơ sở dữ liệu) hoàn thành; T02 (đăng nhập, phiên) hoàn thành; T03 (đăng ký, duyệt cửa hàng) hoàn thành; T04 (nhân viên, khoá API) hoàn thành; T06 (quy tắc tích điểm) và T05 (khách hàng) hoàn thành; T07a (lõi cộng/đổi điểm) và T07b (chống gửi trùng, endpoint cộng/đổi điểm) đã viết, chờ kiểm thử trên máy; T08–T10 chưa bắt đầu |
+| FE1–FE6 Lõi API và bảo mật (T01–T10) | T01 (cơ sở dữ liệu) hoàn thành; T02 (đăng nhập, phiên) hoàn thành; T03 (đăng ký, duyệt cửa hàng) hoàn thành; T04 (nhân viên, khoá API) hoàn thành; T06 (quy tắc tích điểm) và T05 (khách hàng) hoàn thành; T07a (lõi cộng/đổi điểm) và T07b (chống gửi trùng, endpoint cộng/đổi điểm) hoàn thành; T08 (sổ cái, huỷ giao dịch) đã viết, chờ kiểm thử trên máy; T09, T10 chưa bắt đầu |
 | FE7 Web Portal | Chưa bắt đầu |
 | FE8 Anchoring trên Sui | Chưa bắt đầu |
 | FE9 SDK, FE10 MCP | Chưa bắt đầu |

@@ -13,6 +13,8 @@ import { balanceOf, countTransactions, insertApiKey, pointsFixture, setBalance, 
 let db: TestDatabase;
 let sql: Sql;
 const TEMPLATE = 'https://suiscan.xyz/testnet/tx/{digest}';
+/** request_hash is char(64) (db-schema.md): use real 64-character SHA-256 values, not short strings that the column pads with spaces. */
+const H = (text: string): string => sha256Hex(text);
 
 beforeAll(async () => {
   db = await createTestDatabase();
@@ -34,7 +36,7 @@ async function codeOf(promise: Promise<unknown>): Promise<string> {
 const userScope = (f: PointsFixture): IdempotencyScope => ({ kind: 'USER', userId: f.ownerId });
 
 /** Issue 10 points (100000 VND at 10000 per point) through withIdempotency. */
-function issueOnce(f: PointsFixture, scope: IdempotencyScope, key: string, hash = 'hash-1') {
+function issueOnce(f: PointsFixture, scope: IdempotencyScope, key: string, hash = H('hash-1')) {
   return withIdempotency(sql, { scope, key, requestHash: hash }, async (tx) => {
     const row = await issuePointsInTx(tx, { merchantId: f.merchantId, customerCode: 'CUS001', amount: 100000, actor: f.actor });
     return { status: 201, body: toTransactionView(row, TEMPLATE) };
@@ -63,7 +65,7 @@ describe('withIdempotency', () => {
       FROM idempotency_keys WHERE idempotency_key = 'key-stored'`;
     expect(String(row.scope_user_id)).toBe(f.ownerId);
     expect(row.scope_api_key_id).toBeNull();
-    expect(row.request_hash).toBe('hash-1');
+    expect(row.request_hash).toBe(H('hash-1'));
     expect(Number(row.response_status)).toBe(201);
     expect(row.response_body).toEqual(first.body);
   });
@@ -81,11 +83,11 @@ describe('withIdempotency', () => {
 
   it('answers MSG34 for the same key with another request, does nothing, and still replays the first response', async () => {
     const f = await pointsFixture(sql);
-    const first = await issueOnce(f, userScope(f), 'key-clash', 'hash-A');
-    expect(await codeOf(issueOnce(f, userScope(f), 'key-clash', 'hash-B'))).toBe('MSG34');
+    const first = await issueOnce(f, userScope(f), 'key-clash', H('hash-A'));
+    expect(await codeOf(issueOnce(f, userScope(f), 'key-clash', H('hash-B')))).toBe('MSG34');
     expect(await countTransactions(sql, f.customerId)).toBe(1);
 
-    const again = await issueOnce(f, userScope(f), 'key-clash', 'hash-A');
+    const again = await issueOnce(f, userScope(f), 'key-clash', H('hash-A'));
     expect(again.replayed).toBe(true);
     expect(again.body).toEqual(first.body);
   });
@@ -93,7 +95,7 @@ describe('withIdempotency', () => {
   it('saves nothing when the work fails, so the same key can be retried after the cause is fixed', async () => {
     const f = await pointsFixture(sql, { balance: 0, minRedemption: 1 });
     const redeem = () =>
-      withIdempotency(sql, { scope: userScope(f), key: 'key-retry', requestHash: 'hash-R' }, async (tx) => {
+      withIdempotency(sql, { scope: userScope(f), key: 'key-retry', requestHash: H('hash-R') }, async (tx) => {
         const row = await redeemPointsInTx(tx, { merchantId: f.merchantId, customerCode: 'CUS001', points: 10, actor: f.actor });
         return { status: 201, body: toTransactionView(row, TEMPLATE) };
       });
@@ -143,15 +145,15 @@ describe('withIdempotency', () => {
 
   it('ignores and deletes a saved key older than 24 hours, even for another request', async () => {
     const f = await pointsFixture(sql);
-    await issueOnce(f, userScope(f), 'key-old', 'hash-old');
+    await issueOnce(f, userScope(f), 'key-old', H('hash-old'));
     await sql`UPDATE idempotency_keys SET created_at = now() - interval '25 hours' WHERE idempotency_key = 'key-old'`;
 
-    const result = await issueOnce(f, userScope(f), 'key-old', 'hash-new'); // would be MSG34 if the row still counted
+    const result = await issueOnce(f, userScope(f), 'key-old', H('hash-new')); // would be MSG34 if the row still counted
     expect(result.replayed).toBe(false);
     expect(await countTransactions(sql, f.customerId)).toBe(2);
     const rows = await sql`SELECT request_hash FROM idempotency_keys WHERE idempotency_key = 'key-old'`;
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.request_hash).toBe('hash-new');
+    expect(rows[0]!.request_hash).toBe(H('hash-new'));
   });
 
   it('still protects a key that is 23 hours old', async () => {
@@ -164,7 +166,7 @@ describe('withIdempotency', () => {
 
   it('keeps and replays the status that the work returned', async () => {
     const f = await pointsFixture(sql);
-    const run = () => withIdempotency(sql, { scope: userScope(f), key: 'key-200', requestHash: 'h' }, async () => ({ status: 200, body: { ok: true } }));
+    const run = () => withIdempotency(sql, { scope: userScope(f), key: 'key-200', requestHash: H('h') }, async () => ({ status: 200, body: { ok: true } }));
     expect(await run()).toEqual({ status: 200, body: { ok: true }, replayed: false });
     expect(await run()).toEqual({ status: 200, body: { ok: true }, replayed: true });
   });
