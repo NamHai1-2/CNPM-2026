@@ -46,7 +46,7 @@ Yêu cầu: Node.js 20+, pnpm, PostgreSQL 16+.
 corepack enable                   # dùng đúng phiên bản pnpm trong package.json
 pnpm install
 cp .env.example .env              # file .env nằm ở thư mục gốc; điền SECRET_ENCRYPTION_KEY thật (lệnh sinh khoá có trong file)
-docker compose up -d db           # PostgreSQL 16 trên localhost:5432
+docker compose up -d db           # PostgreSQL 16 trên localhost:5433
 pnpm --filter api migrate
 pnpm --filter api seed:admin
 pnpm --filter api dev             # http://localhost:3001/health
@@ -62,8 +62,8 @@ Chi tiết biến môi trường và triển khai: [`docs/config-and-deploy.md`]
 | Hạng mục | Trạng thái |
 |---|---|
 | Tài liệu (SRS, API, DB, thiết kế) | Hoàn thành |
-| T00 Khung dự án (công cụ, CI, cấu hình, thông điệp, migration, test) | Đã viết, cần chạy `pnpm install` và `pnpm test` lần đầu để xác nhận |
-| FE1–FE6 Lõi API và bảo mật (T01–T10) | Chưa bắt đầu (T01: migration và test đã có, chờ chạy) |
+| T00 Khung dự án (công cụ, CI, cấu hình, thông điệp, migration, test) | Hoàn thành, đã kiểm thử (63 test đạt) |
+| FE1–FE6 Lõi API và bảo mật (T01–T10) | T01 (cơ sở dữ liệu) hoàn thành; T02 (đăng nhập, phiên) hoàn thành; T03 (đăng ký, duyệt cửa hàng) hoàn thành; T04 (nhân viên, khoá API) đã viết, chờ kiểm thử trên máy; T05–T10 chưa bắt đầu |
 | FE7 Web Portal | Chưa bắt đầu |
 | FE8 Anchoring trên Sui | Chưa bắt đầu |
 | FE9 SDK, FE10 MCP | Chưa bắt đầu |
