@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import type { Hono } from 'hono';
 import type { Config } from '../config.js';
 import type { Sql } from '../db/client.js';
@@ -25,3 +26,17 @@ export function registerRoutes(app: Hono<AppEnv>, deps: RouteDeps): void {
   app.route('/api/v1/merchant/staff', staffRoutes(deps));
   app.route('/api/v1/merchant/api-keys', apiKeyRoutes(deps));
 }
+=======
+import { Hono } from 'hono';
+import { Sql } from '../db/client.js';
+import { adminDashboardRoutes, merchantDashboardRoutes } from './portal/dashboard.js';
+
+export interface RouteDeps {
+  sql: Sql;
+}
+
+export function registerRoutes(app: Hono, deps: RouteDeps) {
+  app.route('/api/v1/admin/dashboard', adminDashboardRoutes(deps));
+  app.route('/api/v1/merchant/dashboard', merchantDashboardRoutes(deps));
+}
+>>>>>>> origin/feature/CNPM-387-T04-staff-apikeys
