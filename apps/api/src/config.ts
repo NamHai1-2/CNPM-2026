@@ -19,6 +19,8 @@ const schema = z
         message: 'must be 32 random bytes encoded as base64 (see .env.example)',
       }),
     SUI_RPC_URL: z.string().url().default('https://fullnode.testnet.sui.io:443'),
+        // Chỉ dùng để tìm lại digest khi contract báo E_DUPLICATE (anchoring.md §3 bước 4).
+    SUI_GRAPHQL_URL: z.string().url().default('https://graphql.testnet.sui.io/graphql'),
     SUI_PRIVATE_KEY: z.string().optional(),
     SUI_PACKAGE_ID: z.string().optional(),
     SUI_REGISTRY_ID: z.string().optional(),

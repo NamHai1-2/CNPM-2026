@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.13.0",
+    "@mysten/sui": "^2.39.1",
     "bcryptjs": "^3.0.2",
     "hono": "^4.6.0",
     "postgres": "^3.4.4",
