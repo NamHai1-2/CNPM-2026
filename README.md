@@ -74,3 +74,4 @@ _(Cập nhật bảng này sau mỗi sprint.)_
 ## Quy trình làm việc
 
 Nhánh `main` (luôn chạy được, dùng để demo) ← `develop` ← `feature/Txx-ten-task`. Mỗi task một pull request, có ít nhất 1 người review. Commit bắt đầu bằng `[Feature]` hoặc `[Fix]`. Các mốc nộp được đánh tag (ví dụ `v0.1-docs`, `v1.0`).
+
